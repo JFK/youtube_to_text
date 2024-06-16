@@ -20,7 +20,7 @@ pip install yt2t
 
 ### from GitHub
 ```bash
-git clone https://github.com/JFK/youtube_to_text
+git clone https://github.com/JFK/youtube_to_text.git
 cd youtube_to_text
 pipx install .
 ```
