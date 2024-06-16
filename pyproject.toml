@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yt2t"
+version = "0.1.0"
+description = "Extract audio from YouTube videos or local audio files and convert it into text."
+readme = "README.md"
+license = {text = "Apache License 2.0"}
+requires-python = ">=3.10"
+dependencies = [
+    "pytube==15.0.0",
+    "moviepy==1.0.3",
+    "openai-whisper==20231117",
+    "pydub==0.25.1",
+    "youtube-transcript-api==0.6.2",
+]
+
+[project.scripts]
+yt2t = "yt2t.main:main"
+
