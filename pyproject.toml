@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yt2t"
-version = "0.1.2"
+version = "0.1.3"
 description = "Extract audio from YouTube videos or local audio files and convert it into text."
 readme = "README.md"
 license = {text = "Apache License 2.0"}
