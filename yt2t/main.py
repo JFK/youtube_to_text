@@ -16,7 +16,7 @@ import re
 from typing import Optional
 
 from pytube import YouTube
-from moviepy.editor import AudioFileClip
+from moviepy.editor import AudioFileClip, VideoFileClip
 import whisper
 import torch
 from youtube_transcript_api import (
@@ -51,7 +51,9 @@ def download_youtube_audio_as_mp3(url: str) -> Optional[str]:
             unit_scale=True,
             desc="Downloading youtube audio",
         )
-        temp_file = audio_stream.download(skip_existing=False)
+        temp_file = audio_stream.download(
+            skip_existing=False, filename=f"{yt.video_id}.mp4"
+        )
         tqdm_instance.close()
         output_path = f"{yt.video_id}.mp3"
         audio_clip = AudioFileClip(temp_file)
@@ -74,6 +76,18 @@ def convert_mp3_to_wav(mp3_path: str) -> Optional[str]:
         return None
 
 
+def convert_mp4_to_wav(mp4_path: str) -> Optional[str]:
+    try:
+        video = VideoFileClip(mp4_path)
+        audio = video.audio
+        wav_path = mp4_path.replace(".mp4", ".wav")
+        audio.write_audiofile(wav_path)
+        return wav_path
+    except Exception as e:
+        print(f"Error converting MP4 to WAV: {e}")
+        return None
+
+
 def get_audio_length(audio_path: str) -> float:
     with wave.open(audio_path, "rb") as audio:
         frames = audio.getnframes()
@@ -85,10 +99,19 @@ def get_audio_length(audio_path: str) -> float:
 def convert_audio_to_text(audio_path: str, language: str = "ja") -> Optional[str]:
     try:
         if not audio_path.endswith(".wav"):
-            audio_path = convert_mp3_to_wav(audio_path)
+            if audio_path.endswith(".mp3"):
+                audio_path = convert_mp3_to_wav(audio_path)
+            elif audio_path.endswith(".mp4"):
+                audio_path = convert_mp4_to_wav(audio_path)
+            else:
+                raise ValueError(
+                    "Unsupported file format. Only MP3 and MP4 are supported."
+                )
+
         audio_length = get_audio_length(audio_path)
+        model_name = os.getenv("WHISPER_MODEL", "large-v3")
         model = whisper.load_model(
-            "base", device="cuda" if torch.cuda.is_available() else "cpu"
+            model_name, device="cuda" if torch.cuda.is_available() else "cpu"
         )
         with tqdm(
             total=audio_length, unit="s", unit_scale=True, desc="Transcribing audio"
@@ -134,7 +157,13 @@ def main() -> None:
     args = parser.parse_args()
 
     if os.path.isfile(args.source):
-        audio_file = args.source
+        if args.source.endswith(".mp4"):
+            audio_file = convert_mp4_to_wav(args.source)
+            if audio_file is None:
+                print("Failed to convert MP4 to WAV.")
+                return
+        else:
+            audio_file = args.source
         text = convert_audio_to_text(audio_file, args.language)
     elif is_valid_youtube_url(args.source):
         if args.ignore_transcript:
